@@ -32,6 +32,8 @@ base_inputs = {
             'help_text': _('The CA certificate used to verify the SSL certificate of the Vault server'),
         },
         {'id': 'role_id', 'label': _('AppRole role_id'), 'type': 'string', 'multiline': False, 'help_text': _('The Role ID for AppRole Authentication')},
+        {'id': 'role', 'label': _('k8s role'), 'type': 'string', 'multiline': False,
+         'help_text': _('The Role ID for Kubernetes Authentication')},
         {
             'id': 'secret_id',
             'label': _('AppRole secret_id'),
@@ -152,11 +154,42 @@ def handle_auth(**kwargs):
         token = kwargs['token']
     elif kwargs.get('role_id') and kwargs.get('secret_id'):
         token = approle_auth(**kwargs)
+    elif kwargs.get('role'):
+        token = k8s_auth(**kwargs)
     else:
         raise Exception('Either token or AppRole parameters must be set')
 
     return token
 
+
+def k8s_auth(**kwargs):
+    sa_token_path = kwargs.get('sa_token_path', '/var/run/secrets/kubernetes.io/serviceaccount/token')
+    role = kwargs['role']
+    # we first try to use the 'auth_path' from the metadata
+    # if not found we try to fetch the 'default_auth_path' from inputs
+    auth_path = kwargs.get('auth_path') or kwargs['default_auth_path']
+
+    url = urljoin(kwargs['url'], 'v1')
+    cacert = kwargs.get('cacert', None)
+
+    with open(sa_token_path, 'r') as fd:
+        sa_token = fd.read()
+
+    request_kwargs = {'timeout': 30}
+    # AppRole Login
+    request_kwargs['json'] = {'jwt': sa_token, 'role': role}
+    sess = requests.Session()
+    # Namespace support
+    if kwargs.get('namespace'):
+        sess.headers['X-Vault-Namespace'] = kwargs['namespace']
+    request_url = '/'.join([url, 'auth', auth_path, 'login']).rstrip('/')
+
+    with CertFiles(cacert) as cert:
+        request_kwargs['verify'] = cert
+        resp = sess.post(request_url, **request_kwargs)
+    resp.raise_for_status()
+    token = resp.json()['auth']['client_token']
+    return token
 
 def approle_auth(**kwargs):
     role_id = kwargs['role_id']
