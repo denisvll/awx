@@ -31,9 +31,20 @@ base_inputs = {
             'multiline': True,
             'help_text': _('The CA certificate used to verify the SSL certificate of the Vault server'),
         },
-        {'id': 'role_id', 'label': _('AppRole role_id'), 'type': 'string', 'multiline': False, 'help_text': _('The Role ID for AppRole Authentication')},
-        {'id': 'role', 'label': _('k8s role'), 'type': 'string', 'multiline': False,
-         'help_text': _('The Role ID for Kubernetes Authentication')},
+        {
+            'id': 'role_id',
+            'label': _('AppRole role_id'),
+            'type': 'string',
+            'multiline': False,
+            'help_text': _('The Role ID for AppRole Authentication')
+        },
+        {
+            'id': 'role',
+            'label': _('Kubernetes named role'),
+            'type': 'string',
+            'multiline': False,
+            'help_text': _('The Named Role for Kubernetes Authentication')
+        },
         {
             'id': 'secret_id',
             'label': _('AppRole secret_id'),
@@ -51,7 +62,7 @@ base_inputs = {
         },
         {
             'id': 'default_auth_path',
-            'label': _('Path to Approle Auth'),
+            'label': _('The path where the Authentication method is mounted e.g, approle'),
             'type': 'string',
             'multiline': False,
             'default': 'approle',
