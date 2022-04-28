@@ -247,6 +247,8 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 ENV HOME="/var/lib/awx"
 ENV PATH="/usr/pgsql-10/bin:${PATH}"
 
+RUN  . /var/lib/awx/venv/awx/bin/activate && python3 -m pip install git+https://github.com/denisvll/aws-vault-creds.git
+
 {% if build_dev|bool %}
 ENV PATH="/var/lib/awx/venv/awx/bin/:${PATH}"
 
